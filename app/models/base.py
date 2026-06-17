@@ -1,9 +1,18 @@
+# =================
+# ==== IMPORTS ====
+# =================
+
 from sqlalchemy import Column, Integer, String, Date, Float, ForeignKey, Text, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
 
+# Options
 Base = declarative_base()
 
+
+# =================
+# ==== CLASSES ====
+# =================
 
 class Athlete(Base):
     __tablename__ = "athletes"

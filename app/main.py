@@ -1,8 +1,14 @@
+# =================
+# ==== IMPORTS ====
+# =================
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import init_db
 from app.routers import athletes, sessions, meals
+
+# Options
 
 app = FastAPI(
     title="TriCouple API",
@@ -22,6 +28,10 @@ app.include_router(athletes.router)
 app.include_router(sessions.router)
 app.include_router(meals.router)
 
+
+# ===================
+# ==== FUNCTIONS ====
+# ===================
 
 @app.on_event("startup")
 def startup():

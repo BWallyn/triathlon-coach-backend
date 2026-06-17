@@ -1,7 +1,12 @@
+# =================
+# ==== IMPORTS ====
+# =================
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from app.models.base import Base, Athlete
 
+# Options
 DATABASE_URL = "sqlite:///./tricouple.db"
 
 engine = create_engine(
@@ -11,6 +16,10 @@ engine = create_engine(
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+
+# ===================
+# ==== FUNCTIONS ====
+# ===================
 
 def get_db():
     db = SessionLocal()
