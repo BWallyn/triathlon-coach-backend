@@ -1,0 +1,58 @@
+[project]
+name = "triathlon-coach-backend"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi>=0.137.1",
+    "sqlalchemy>=2.0.51",
+]
+
+[tool.ruff]
+line-length = 88
+show-fixes = true
+lint.select = [
+    "B",    # Bugbear
+    "C4",   # Comprehensions
+    "C90",  # mccabe
+    "D",    # Docstrings
+    "E",    # pycodestyle error
+    "W",    # pycodestyle warning
+    "F",    # flake8
+    "S",    # bandit
+    "N",    # pep8-naming
+    "RUF",  # ruff
+    "I",    # isort
+    "PD",   # pandas
+    "UP",   # pyupgrade
+    "PL",   # pylint
+    "T201", # print
+]
+lint.ignore = [
+    "E501", # line too long
+    "D100", # missing docstring
+    "D104", # missing docstring in public package
+    "D203", # One blank line before class docstring
+    "D205", # blank line between summary and description
+    "D212", # Multi-line docstring summary should start at the second line
+    "D400", # first line should end with a period, question mark or exclamation point
+    "D404", # first word of the docstring should not be "This"
+    "D407", # Missing dashed underline after section
+    "D413", # Missing blank line after section
+    "D415", # first line should end with a period, question mark or exclamation point
+    "N806", # Variable should be lowercase
+    "PD901",# Avoid using "df" as a variable name
+]
+
+[tool.coverage.report]
+fail_under = 0
+show_missing = true
+exclude_lines = [ "pragma: no cover", "raise NotImplementedError",]
+
+[tool.ruff.format]
+docstring-code-format = true
+
+[tool.ruff.lint.pydocstyle]
+# Use Google-style docstrings.
+convention = "google"
