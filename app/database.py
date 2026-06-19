@@ -7,7 +7,7 @@ from sqlalchemy.orm import sessionmaker
 from app.models.base import Base, Athlete
 
 # Options
-DATABASE_URL = "sqlite:///./tricouple.db"
+DATABASE_URL = "sqlite:///./triathlon_coach.db"
 
 engine = create_engine(
     DATABASE_URL,
