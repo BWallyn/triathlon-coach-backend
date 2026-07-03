@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import init_db
-from app.routers import athletes, sessions, meals
+from app.routers import athletes, meals, sessions
 
 # Options
 
@@ -35,9 +35,11 @@ app.include_router(meals.router)
 
 @app.on_event("startup")
 def startup():
+    """Initialize the database and seed default data if necessary."""
     init_db()
 
 
 @app.get("/health")
 def health():
+    """Health check endpoint."""
     return {"status": "ok"}

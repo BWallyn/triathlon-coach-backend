@@ -2,9 +2,14 @@
 # ==== IMPORTS ====
 # =================
 
-from sqlalchemy import Column, Integer, String, Date, Float, ForeignKey, Text, create_engine
+from sqlalchemy import (
+    Column,
+    ForeignKey,
+    Integer,
+    String,
+)
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship, sessionmaker
+from sqlalchemy.orm import relationship
 
 # Options
 Base = declarative_base()
@@ -15,6 +20,7 @@ Base = declarative_base()
 # =================
 
 class Athlete(Base):
+    """SQLAlchemy model for an athlete."""
     __tablename__ = "athletes"
 
     id = Column(String, primary_key=True)  # "B" or "C"
@@ -24,6 +30,7 @@ class Athlete(Base):
 
 
 class Session(Base):
+    """SQLAlchemy model for a training session."""
     __tablename__ = "sessions"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -37,6 +44,7 @@ class Session(Base):
 
 
 class Meal(Base):
+    """SQLAlchemy model for a meal."""
     __tablename__ = "meals"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -48,6 +56,7 @@ class Meal(Base):
 
 
 class Ingredient(Base):
+    """SQLAlchemy model for an ingredient."""
     __tablename__ = "ingredients"
 
     id = Column(Integer, primary_key=True, autoincrement=True)

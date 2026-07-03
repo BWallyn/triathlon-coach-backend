@@ -12,17 +12,22 @@ GET  /ai/weekly-analysis      → load + nutrition + recovery analysis via LLM
 from __future__ import annotations
 
 from datetime import date, timedelta
+
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session as DBSession
 from pydantic import BaseModel
+from sqlalchemy.orm import Session as DBSession
 
 from app.database import get_db
 from app.llm import LLMClient, get_llm_client
-from app.models.base import Session as TrainingSession, Meal, Ingredient
+from app.models.base import Ingredient, Meal
+from app.models.base import Session as TrainingSession
 from app.prompts import (
-    TRAINING_PLAN_SYSTEM, TRAINING_PLAN_USER,
-    MEAL_SUGGESTION_SYSTEM, MEAL_SUGGESTION_USER,
-    WEEKLY_ANALYSIS_SYSTEM, WEEKLY_ANALYSIS_USER,
+    MEAL_SUGGESTION_SYSTEM,
+    MEAL_SUGGESTION_USER,
+    TRAINING_PLAN_SYSTEM,
+    TRAINING_PLAN_USER,
+    WEEKLY_ANALYSIS_SYSTEM,
+    WEEKLY_ANALYSIS_USER,
 )
 
 router = APIRouter(prefix="/ai", tags=["ai"])
@@ -129,7 +134,7 @@ async def generate_training_plan(
     Args:
         body (TrainingPlanRequest): Request body containing week range, goal, load level, constraints
         llm (LLMClient, optional): LLM client dependency. Defaults to Depends(get_llm_client).
-    
+
     Returns:
         (dict): Structured JSON representing the generated training plan.
     """
