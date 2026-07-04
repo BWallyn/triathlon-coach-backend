@@ -7,6 +7,8 @@ from app.schemas import SessionCreate, SessionOut
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
 
+VALID_DISCIPLINES = ("swim", "bike", "run", "strength")
+
 
 @router.get("/", response_model=list[SessionOut])
 def list_sessions(
@@ -27,7 +29,7 @@ def list_sessions(
 
 @router.post("/", response_model=SessionOut, status_code=201)
 def create_session(body: SessionCreate, db: DBSession = Depends(get_db)):
-    if body.discipline not in ("swim", "bike", "run"):
+    if body.discipline not in VALID_DISCIPLINES:
         raise HTTPException(status_code=422, detail="Invalid discipline")
     session = TrainingSession(**body.model_dump())
     db.add(session)
