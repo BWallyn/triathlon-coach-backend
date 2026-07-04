@@ -2,6 +2,7 @@
 # ==== IMPORTS ====
 # =================
 
+from typing import Any
 from pydantic import BaseModel
 
 # =================
@@ -86,3 +87,73 @@ class MealOut(BaseModel):
     class Config:
         """Enable ORM mode to allow returning SQLAlchemy models directly."""
         from_attributes = True
+
+
+# ── Sleep ─────────────────────────────────────────────────────
+
+class SleepLogIn(BaseModel):
+    """Schema for creating/updating a sleep entry."""
+    athlete_id: str
+    date: str
+    duration_min: int
+    quality: int
+    deep_min: int | None = None
+    rem_min: int | None = None
+    source: str | None = None
+
+
+class SleepLogOut(SleepLogIn):
+    """Schema for returning a sleep entry."""
+    id: int
+
+    class Config:
+        from_attributes = True
+
+
+# ── Feeling ───────────────────────────────────────────────────
+
+class FeelingLogIn(BaseModel):
+    """Schema for creating/updating a feeling entry."""
+    athlete_id: str
+    date: str
+    fatigue: int
+    motivation: int
+    soreness: int
+    note: str | None = None
+
+
+class FeelingLogOut(FeelingLogIn):
+    """Schema for returning a feeling entry."""
+    id: int
+
+    class Config:
+        from_attributes = True
+
+
+# ── Weight ────────────────────────────────────────────────────
+
+class WeightLogIn(BaseModel):
+    """Schema for creating/updating a weight entry."""
+    athlete_id: str
+    date: str
+    weight_kg: float
+
+
+class WeightLogOut(WeightLogIn):
+    """Schema for returning a weight entry."""
+    id: int
+
+    class Config:
+        from_attributes = True
+
+
+# ── Dashboard summary ─────────────────────────────────────────
+
+class DashboardSummaryOut(BaseModel):
+    """Schema for the combined weekly dashboard summary."""
+    week_start: str
+    week_end: str
+    day_charges: dict[str, str]
+    weekly_load: dict[str, dict[str, float]]
+    sleep: dict[str, dict[str, Any]]
+    feeling: dict[str, dict[str, Any]]
