@@ -36,8 +36,8 @@ def init_db():
     try:
         if not db.query(Athlete).filter(Athlete.id == "B").first():
             db.add(Athlete(id="B", name="Benji"))
-        if not db.query(Athlete).filter(Athlete.id == "C").first():
-            db.add(Athlete(id="C", name="Hélène"))
+        if not db.query(Athlete).filter(Athlete.id == "H").first():
+            db.add(Athlete(id="H", name="Hélène"))
         db.commit()
     finally:
         db.close()

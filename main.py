@@ -8,7 +8,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import init_db
-from app.routers import athletes, meals, sessions
+from app.routers import ai, athletes, meals, sessions, wellness
 
 # Options
 
@@ -37,6 +37,8 @@ app.add_middleware(
 app.include_router(athletes.router)
 app.include_router(sessions.router)
 app.include_router(meals.router)
+app.include_router(ai.router)
+app.include_router(wellness.router)
 
 
 # ===================

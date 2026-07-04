@@ -60,13 +60,13 @@ RECIPES: dict[str, dict[str, list[dict]]] = {
 DUR_WEIGHT = {"30min": 0.5, "45min": 0.75, "1h": 1.0, "1h15": 1.25, "1h30": 1.5, "2h": 2.0, "2h30": 2.5, "3h+": 3.5}
 
 
-def _compute_charge(sessions_b: list, sessions_c: list) -> str:
-    all_sessions = sessions_b + sessions_c
+def _compute_charge(sessions_b: list, sessions_h: list) -> str:
+    all_sessions = sessions_b + sessions_h
     if not all_sessions:
         return "rest"
     h_b = sum(DUR_WEIGHT.get(s.duration, 1.0) for s in sessions_b)
-    h_c = sum(DUR_WEIGHT.get(s.duration, 1.0) for s in sessions_c)
-    max_h = max(h_b, h_c)
+    h_h = sum(DUR_WEIGHT.get(s.duration, 1.0) for s in sessions_h)
+    max_h = max(h_b, h_h)
     if max_h >= 2:
         return "high"
     if max_h >= 1:
@@ -112,12 +112,12 @@ def generate_meals(
             TrainingSession.athlete_id == "B",
             TrainingSession.date == date_str,
         ).all()
-        sessions_c = db.query(TrainingSession).filter(
-            TrainingSession.athlete_id == "C",
+        sessions_h = db.query(TrainingSession).filter(
+            TrainingSession.athlete_id == "H",
             TrainingSession.date == date_str,
         ).all()
 
-        charge = _compute_charge(sessions_b, sessions_c)
+        charge = _compute_charge(sessions_b, sessions_h)
 
         for slot in ("lunch", "dinner"):
             # Remove existing meal for this date+slot

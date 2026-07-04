@@ -95,7 +95,7 @@ def _compute_charge_label(sessions: list[TrainingSession]) -> str:
         return "rest"
     max_h = max(
         sum(DUR_WEIGHT.get(s.duration, 1) for s in sessions if s.athlete_id == a)
-        for a in ("B", "C")
+        for a in ("B", "H")
     )
     if max_h >= 2:
         return "high"
