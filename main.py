@@ -2,6 +2,8 @@
 # ==== IMPORTS ====
 # =================
 
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -10,10 +12,18 @@ from app.routers import athletes, meals, sessions
 
 # Options
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan context manager for FastAPI app."""
+    init_db()
+    yield
+
+
 app = FastAPI(
     title="TriCouple API",
     description="Planning entraînement, nutrition et batch cooking pour triathlètes",
     version="1.0.0",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -32,11 +42,6 @@ app.include_router(meals.router)
 # ===================
 # ==== FUNCTIONS ====
 # ===================
-
-@app.on_event("startup")
-def startup():
-    """Initialize the database and seed default data if necessary."""
-    init_db()
 
 
 @app.get("/health")
