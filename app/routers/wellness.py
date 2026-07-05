@@ -58,6 +58,18 @@ def _charge_for_day(sessions_by_athlete: dict[str, list]) -> str:
     return "low"
 
 
+def _charge_for_athlete_day(sessions: list) -> str:
+    """Charge label for a single athlete on a single day."""
+    if not sessions:
+        return "rest"
+    total_h = sum(DUR_WEIGHT.get(s.duration, 1.0) for s in sessions)
+    if total_h >= 2:
+        return "high"
+    if total_h >= 1:
+        return "med"
+    return "low"
+
+
 # ── Sleep ─────────────────────────────────────────────────────
 
 @router.post("/sleep", response_model=SleepLogOut, status_code=201)
@@ -210,6 +222,10 @@ def dashboard_summary(week_start: str, week_end: str, db: DBSession = Depends(ge
             sessions_by_day[s.date][s.athlete_id].append(s)
 
     day_charges = {d: _charge_for_day(sessions_by_day[d]) for d in days}
+    day_charges_by_athlete: dict[str, dict[str, str]] = {
+        a: {d: _charge_for_athlete_day(sessions_by_day[d][a]) for d in days}
+        for a in athlete_ids
+    }
 
     weekly_load: dict[str, dict[str, float]] = {}
     for a in athlete_ids:
@@ -251,6 +267,7 @@ def dashboard_summary(week_start: str, week_end: str, db: DBSession = Depends(ge
         week_start=week_start,
         week_end=week_end,
         day_charges=day_charges,
+        day_charges_by_athlete=day_charges_by_athlete,
         weekly_load=weekly_load,
         sleep=sleep,
         feeling=feeling,

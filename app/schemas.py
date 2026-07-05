@@ -3,6 +3,7 @@
 # =================
 
 from typing import Any
+
 from pydantic import BaseModel
 
 # =================
@@ -107,6 +108,7 @@ class SleepLogOut(SleepLogIn):
     id: int
 
     class Config:
+        """Enable ORM mode to allow returning SQLAlchemy models directly."""
         from_attributes = True
 
 
@@ -127,6 +129,7 @@ class FeelingLogOut(FeelingLogIn):
     id: int
 
     class Config:
+        """Enable ORM mode to allow returning SQLAlchemy models directly."""
         from_attributes = True
 
 
@@ -144,6 +147,7 @@ class WeightLogOut(WeightLogIn):
     id: int
 
     class Config:
+        """Enable ORM mode to allow returning SQLAlchemy models directly."""
         from_attributes = True
 
 
@@ -154,6 +158,7 @@ class DashboardSummaryOut(BaseModel):
     week_start: str
     week_end: str
     day_charges: dict[str, str]
+    day_charges_by_athlete: dict[str, dict[str, str]]
     weekly_load: dict[str, dict[str, float]]
     sleep: dict[str, dict[str, Any]]
     feeling: dict[str, dict[str, Any]]
