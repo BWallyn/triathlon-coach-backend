@@ -229,7 +229,7 @@ def dashboard_summary(week_start: str, week_end: str, db: DBSession = Depends(ge
 
     weekly_load: dict[str, dict[str, float]] = {}
     for a in athlete_ids:
-        totals = {"swim": 0.0, "bike": 0.0, "run": 0.0}
+        totals = {"swim": 0.0, "bike": 0.0, "run": 0.0, "strength": 0.0}
         for s in sessions:
             if s.athlete_id == a and s.discipline in totals:
                 totals[s.discipline] += DUR_WEIGHT.get(s.duration, 1.0)
