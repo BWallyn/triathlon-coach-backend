@@ -45,5 +45,8 @@ def init_db():
         if not db.query(Athlete).filter(Athlete.id == "H").first():
             db.add(Athlete(id="H", name="Hélène"))
         db.commit()
+
+        from app.data.ciqual_seed import seed_ingredient_nutrition
+        seed_ingredient_nutrition(db)
     finally:
         db.close()

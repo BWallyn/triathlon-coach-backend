@@ -162,3 +162,95 @@ class DashboardSummaryOut(BaseModel):
     weekly_load: dict[str, dict[str, float]]
     sleep: dict[str, dict[str, Any]]
     feeling: dict[str, dict[str, Any]]
+
+
+# ── Batch cooking ─────────────────────────────────────────────
+
+class BatchRecipeIngredientIn(BaseModel):
+    """Schema for one ingredient line in a batch recipe, quantity given per serving."""
+    ingredient_name: str
+    quantity_per_serving: float
+    unit: str
+    is_scalable: bool = True
+    unit_weight_g: float | None = None
+
+
+class BatchRecipeIngredientOut(BatchRecipeIngredientIn):
+    """Schema for returning a batch recipe ingredient."""
+    id: int
+
+    class Config:
+        """Enable ORM mode to allow returning SQLAlchemy models directly."""
+        from_attributes = True
+
+
+class BatchRecipeCreate(BaseModel):
+    """Schema for creating a batch-cooking recipe."""
+    name: str
+    instructions: str | None = None
+    ingredients: list[BatchRecipeIngredientIn]
+
+
+class BatchRecipeOut(BaseModel):
+    """Schema for returning a batch-cooking recipe."""
+    id: int
+    name: str
+    instructions: str | None
+    ingredients: list[BatchRecipeIngredientOut]
+
+    class Config:
+        """Enable ORM mode to allow returning SQLAlchemy models directly."""
+        from_attributes = True
+
+
+class PortionAssignment(BaseModel):
+    """One portion to create at a given date/slot, with its own preset."""
+    date: str
+    slot: str
+    preset: str
+
+
+class BatchCookingPlanCreate(BaseModel):
+    """Schema for creating a batch-cooking plan: pick a recipe, assign portions."""
+    recipe_id: int
+    created_date: str
+    portions: list[PortionAssignment]
+
+
+class MealPortionOut(BaseModel):
+    """Schema for returning one portion's computed macros."""
+    id: int
+    preset: str
+    kcal: float
+    protein_g: float
+    carbs_g: float
+    fat_g: float
+
+    class Config:
+        """Enable ORM mode to allow returning SQLAlchemy models directly."""
+        from_attributes = True
+
+
+class BatchMealOut(BaseModel):
+    """Schema for a Meal created from a batch plan, with its portions."""
+    id: int
+    date: str
+    slot: str
+    name: str
+    portions: list[MealPortionOut]
+
+    class Config:
+        """Enable ORM mode to allow returning SQLAlchemy models directly."""
+        from_attributes = True
+
+
+class BatchCookingPlanOut(BaseModel):
+    """Schema for returning a batch-cooking plan with its meals/portions."""
+    id: int
+    recipe_id: int
+    created_date: str
+    meals: list[BatchMealOut]
+
+    class Config:
+        """Enable ORM mode to allow returning SQLAlchemy models directly."""
+        from_attributes = True
