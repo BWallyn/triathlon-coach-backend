@@ -3,6 +3,7 @@
 # =================
 
 from sqlalchemy import (
+    Boolean,
     Column,
     Float,
     ForeignKey,
@@ -55,6 +56,9 @@ class Meal(Base):
     name = Column(String, nullable=False)
 
     ingredients = relationship("Ingredient", back_populates="meal", cascade="all, delete-orphan")
+    batch_plan_id = Column(Integer, ForeignKey("batch_cooking_plans.id"), nullable=True)
+    batch_plan = relationship("BatchCookingPlan", back_populates="meals")
+    portions = relationship("MealPortion", back_populates="meal", cascade="all, delete-orphan")
 
 
 class Ingredient(Base):
@@ -110,3 +114,67 @@ class WeightLog(Base):
     weight_kg = Column(Float, nullable=False)
 
     __table_args__ = (UniqueConstraint("athlete_id", "date", name="uq_weight_athlete_date"),)
+
+
+class IngredientNutrition(Base):
+    """SQLAlchemy model for per-100g nutrition data (source: Ciqual/ANSES)."""
+    __tablename__ = "ingredient_nutrition"
+
+    name = Column(String, primary_key=True)
+    kcal_100g = Column(Float, nullable=False)
+    protein_100g = Column(Float, nullable=False)
+    carbs_100g = Column(Float, nullable=False)
+    fat_100g = Column(Float, nullable=False)
+
+
+class BatchRecipe(Base):
+    """SQLAlchemy model for a batch-cooking recipe (cook once, portion across days)."""
+    __tablename__ = "batch_recipes"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String, nullable=False)
+    instructions = Column(String, nullable=True)
+
+    ingredients = relationship("BatchRecipeIngredient", back_populates="recipe", cascade="all, delete-orphan")
+
+
+class BatchRecipeIngredient(Base):
+    """SQLAlchemy model for one ingredient line in a batch recipe, quantity given per serving."""
+    __tablename__ = "batch_recipe_ingredients"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    recipe_id = Column(Integer, ForeignKey("batch_recipes.id"), nullable=False)
+    ingredient_name = Column(String, ForeignKey("ingredient_nutrition.name"), nullable=False)
+    quantity_per_serving = Column(Float, nullable=False)
+    unit = Column(String, nullable=False)  # "g" | "ml" | "unité" | "gousse" | "c.à.s" ...
+    is_scalable = Column(Boolean, nullable=False, default=True)  # False = épices/aromates fixes
+    unit_weight_g = Column(Float, nullable=True)  # grammes/unité, requis pour macros si unit != g/ml
+
+    recipe = relationship("BatchRecipe", back_populates="ingredients")
+
+
+class BatchCookingPlan(Base):
+    """SQLAlchemy model for one batch-cooking session (a recipe cooked once, portioned across meals)."""
+    __tablename__ = "batch_cooking_plans"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    recipe_id = Column(Integer, ForeignKey("batch_recipes.id"), nullable=False)
+    created_date = Column(String, nullable=False)
+
+    recipe = relationship("BatchRecipe")
+    meals = relationship("Meal", back_populates="batch_plan")
+
+
+class MealPortion(Base):
+    """SQLAlchemy model for one portion of a batch meal, with its own preset and macros."""
+    __tablename__ = "meal_portions"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    meal_id = Column(Integer, ForeignKey("meals.id"), nullable=False)
+    preset = Column(String, nullable=False)
+    kcal = Column(Float, nullable=False)
+    protein_g = Column(Float, nullable=False)
+    carbs_g = Column(Float, nullable=False)
+    fat_g = Column(Float, nullable=False)
+
+    meal = relationship("Meal", back_populates="portions")

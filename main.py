@@ -8,7 +8,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import init_db
-from app.routers import ai, athletes, meals, sessions, wellness
+from app.routers import ai, athletes, batch_cooking, meals, sessions, wellness
 
 # Options
 
@@ -39,6 +39,7 @@ app.include_router(sessions.router)
 app.include_router(meals.router)
 app.include_router(ai.router)
 app.include_router(wellness.router)
+app.include_router(batch_cooking.router)
 
 
 # ===================
