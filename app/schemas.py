@@ -77,6 +77,20 @@ class MealCreate(BaseModel):
     ingredients: list[IngredientIn]
 
 
+class MealPortionOut(BaseModel):
+    """Schema for returning one portion's computed macros."""
+    id: int
+    preset: str
+    kcal: float
+    protein_g: float
+    carbs_g: float
+    fat_g: float
+
+    class Config:
+        """Enable ORM mode to allow returning SQLAlchemy models directly."""
+        from_attributes = True
+
+
 class MealOut(BaseModel):
     """Schema for returning meal data."""
     id: int
@@ -84,6 +98,8 @@ class MealOut(BaseModel):
     slot: str
     name: str
     ingredients: list[IngredientOut]
+    batch_plan_id: int | None = None
+    portions: list[MealPortionOut] = []
 
     class Config:
         """Enable ORM mode to allow returning SQLAlchemy models directly."""
@@ -215,20 +231,6 @@ class BatchCookingPlanCreate(BaseModel):
     recipe_id: int
     created_date: str
     portions: list[PortionAssignment]
-
-
-class MealPortionOut(BaseModel):
-    """Schema for returning one portion's computed macros."""
-    id: int
-    preset: str
-    kcal: float
-    protein_g: float
-    carbs_g: float
-    fat_g: float
-
-    class Config:
-        """Enable ORM mode to allow returning SQLAlchemy models directly."""
-        from_attributes = True
 
 
 class BatchMealOut(BaseModel):
