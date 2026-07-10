@@ -2,15 +2,27 @@
 # ==== IMPORTS ====
 # =================
 
+# Charger le fichier .env AVANT tout import du package `app`, afin que les
+# variables (ATHLETE_B_NAME, ATHLETE_H_NAME, DATABASE_URL, clés LLM...) soient
+# disponibles dès le chargement de app.config / app.database.
 from contextlib import asynccontextmanager
 
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import init_db
-from app.routers import ai, athletes, batch_cooking, meals, sessions, wellness
+from app.routers import (
+    ai,
+    athletes,
+    batch_cooking,
+    meals,
+    sessions,
+    wellness,
+)
 
 # Options
+load_dotenv()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
