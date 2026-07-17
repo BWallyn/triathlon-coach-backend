@@ -135,8 +135,14 @@ class BatchRecipe(Base):
     name = Column(String, nullable=False)
     instructions = Column(String, nullable=True)
     base_portions = Column(Integer, nullable=False, default=4)
-    season = Column(String, nullable=True)       # "spring"|"summer"|"autumn"|"winter"|None (toutes saisons)
+    season = Column(String, nullable=True)
     recipe_link = Column(String, nullable=True)
+    # Macros de référence par portion (informatif, saisi manuellement,
+    # ne remplace pas le calcul auto via ingrédients + Ciqual)
+    ref_kcal = Column(Float, nullable=True)
+    ref_protein_g = Column(Float, nullable=True)
+    ref_carbs_g = Column(Float, nullable=True)
+    ref_fat_g = Column(Float, nullable=True)
 
     ingredients = relationship("BatchRecipeIngredient", back_populates="recipe", cascade="all, delete-orphan")
 

@@ -205,8 +205,12 @@ class BatchRecipeCreate(BaseModel):
     name: str
     instructions: str | None = None
     base_portions: int
-    season: str | None = None       # "spring"|"summer"|"autumn"|"winter"|None
+    season: str | None = None
     recipe_link: str | None = None
+    ref_kcal: float | None = None
+    ref_protein_g: float | None = None
+    ref_carbs_g: float | None = None
+    ref_fat_g: float | None = None
     ingredients: list[BatchRecipeIngredientIn]
 
 
@@ -218,6 +222,10 @@ class BatchRecipeOut(BaseModel):
     base_portions: int
     season: str | None
     recipe_link: str | None
+    ref_kcal: float | None = None
+    ref_protein_g: float | None = None
+    ref_carbs_g: float | None = None
+    ref_fat_g: float | None = None
     ingredients: list[BatchRecipeIngredientOut]
 
     class Config:

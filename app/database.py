@@ -62,6 +62,10 @@ def _migrate_missing_columns() -> None:
         "base_portions": "INTEGER NOT NULL DEFAULT 4",
         "season": "VARCHAR",
         "recipe_link": "VARCHAR",
+        "ref_kcal": "FLOAT",
+        "ref_protein_g": "FLOAT",
+        "ref_carbs_g": "FLOAT",
+        "ref_fat_g": "FLOAT",
     }
     with engine.begin() as conn:
         for col, ddl in additions.items():
