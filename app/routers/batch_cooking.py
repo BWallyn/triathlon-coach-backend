@@ -58,11 +58,7 @@ def list_batch_recipes(season: str | None = None, db: DBSession = Depends(get_db
 @router.post("/recipes", response_model=BatchRecipeOut, status_code=201)
 def create_batch_recipe(body: BatchRecipeCreate, db: DBSession = Depends(get_db)):
     """Create a new batch-cooking recipe, ingredient quantities given per serving.
-
-    Ingredients not yet present in ingredient_nutrition are auto-created with
-    zeroed macros (kcal/protein/carbs/fat = 0), to be corrected later via the
-    Ciqual import / LLM matching pipeline. This avoids a ForeignKeyViolation
-    that only surfaces in prod (Postgres enforces the FK; SQLite in dev doesn't).
+    ...
     """
     if body.season and body.season not in SEASONS:
         raise HTTPException(status_code=422, detail=f"Invalid season '{body.season}'")
@@ -81,7 +77,7 @@ def create_batch_recipe(body: BatchRecipeCreate, db: DBSession = Depends(get_db)
             name=name, kcal_100g=0, protein_100g=0, carbs_100g=0, fat_100g=0,
         ))
     if missing_names:
-        db.flush()  # les IngredientNutrition doivent exister avant l'insert des FK
+        db.flush()
 
     recipe = BatchRecipe(
         name=body.name,
@@ -89,12 +85,80 @@ def create_batch_recipe(body: BatchRecipeCreate, db: DBSession = Depends(get_db)
         base_portions=body.base_portions,
         season=body.season,
         recipe_link=body.recipe_link,
+        ref_kcal=body.ref_kcal,
+        ref_protein_g=body.ref_protein_g,
+        ref_carbs_g=body.ref_carbs_g,
+        ref_fat_g=body.ref_fat_g,
     )
     recipe.ingredients = [BatchRecipeIngredient(**i.model_dump()) for i in body.ingredients]
     db.add(recipe)
     db.commit()
     db.refresh(recipe)
     return recipe
+
+
+@router.put("/recipes/{recipe_id}", response_model=BatchRecipeOut)
+def update_batch_recipe(recipe_id: int, body: BatchRecipeCreate, db: DBSession = Depends(get_db)):
+    """Update an existing batch-cooking recipe, replacing its ingredients entirely."""
+    recipe = db.query(BatchRecipe).filter(BatchRecipe.id == recipe_id).first()
+    if not recipe:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+    if body.season and body.season not in SEASONS:
+        raise HTTPException(status_code=422, detail=f"Invalid season '{body.season}'")
+    if body.base_portions < 1:
+        raise HTTPException(status_code=422, detail="base_portions must be at least 1")
+
+    ingredient_names = {i.ingredient_name for i in body.ingredients}
+    existing_names = {
+        name for (name,) in db.query(IngredientNutrition.name)
+        .filter(IngredientNutrition.name.in_(ingredient_names))
+        .all()
+    }
+    missing_names = ingredient_names - existing_names
+    for name in missing_names:
+        db.add(IngredientNutrition(
+            name=name, kcal_100g=0, protein_100g=0, carbs_100g=0, fat_100g=0,
+        ))
+    if missing_names:
+        db.flush()
+
+    recipe.name = body.name
+    recipe.instructions = body.instructions
+    recipe.base_portions = body.base_portions
+    recipe.season = body.season
+    recipe.recipe_link = body.recipe_link
+    recipe.ref_kcal = body.ref_kcal
+    recipe.ref_protein_g = body.ref_protein_g
+    recipe.ref_carbs_g = body.ref_carbs_g
+    recipe.ref_fat_g = body.ref_fat_g
+
+    for ingr in list(recipe.ingredients):
+        db.delete(ingr)
+    recipe.ingredients = [BatchRecipeIngredient(**i.model_dump()) for i in body.ingredients]
+
+    db.commit()
+    db.refresh(recipe)
+    return recipe
+
+
+@router.delete("/recipes/{recipe_id}", status_code=204)
+def delete_batch_recipe(recipe_id: int, db: DBSession = Depends(get_db)):
+    """Delete a batch-cooking recipe.
+
+    Refuses if a batch-cooking plan already references it, to avoid orphaning
+    meals/portions that were generated from it.
+    """
+    recipe = db.query(BatchRecipe).filter(BatchRecipe.id == recipe_id).first()
+    if not recipe:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+    in_use = db.query(BatchCookingPlan).filter(BatchCookingPlan.recipe_id == recipe_id).first()
+    if in_use:
+        raise HTTPException(
+            status_code=409,
+            detail="Cette recette est utilisée dans un plan de batch cooking existant et ne peut pas être supprimée.",
+        )
+    db.delete(recipe)
+    db.commit()
 
 
 # ── Plans ─────────────────────────────────────────────────────
