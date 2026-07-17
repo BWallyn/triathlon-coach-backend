@@ -165,24 +165,57 @@ def delete_batch_recipe(recipe_id: int, db: DBSession = Depends(get_db)):
 
 @router.post("/plans", response_model=BatchCookingPlanOut, status_code=201)
 def create_batch_plan(body: BatchCookingPlanCreate, db: DBSession = Depends(get_db)):
-    """Create a batch-cooking plan. The number of portions assigned must
-    exactly match the recipe's base_portions, since that's how many
-    portions cooking it once actually yields.
+    """Create a batch-cooking plan.
+
+    The number of portions is chosen freely by the user (independent of the
+    recipe's base_portions) — each portion's ingredients/macros are computed
+    individually from quantity_per_serving, so any count scales correctly.
     """
     recipe = db.query(BatchRecipe).filter(BatchRecipe.id == body.recipe_id).first()
     if not recipe:
         raise HTTPException(status_code=404, detail="Recipe not found")
 
-    if len(body.portions) != recipe.base_portions:
-        raise HTTPException(
-            status_code=422,
-            detail=f"This recipe yields {recipe.base_portions} portions; "
-                   f"{len(body.portions)} were assigned.",
-        )
+    if not body.portions:
+        raise HTTPException(status_code=422, detail="At least one portion must be assigned")
 
     for portion in body.portions:
         if portion.preset not in PRESET_FACTORS:
             raise HTTPException(status_code=422, detail=f"Unknown preset '{portion.preset}'")
+
+    nutrition_by_name = {
+        n.name: n
+        for n in db.query(IngredientNutrition)
+        .filter(IngredientNutrition.name.in_([i.ingredient_name for i in recipe.ingredients]))
+        .all()
+    }
+
+    plan = BatchCookingPlan(recipe_id=recipe.id, created_date=body.created_date)
+    db.add(plan)
+    db.flush()  # need plan.id before creating meals
+
+    # Group portions by (date, slot): each slot becomes one Meal, which can
+    # hold several MealPortion rows if multiple portions land on the same meal.
+    grouped: dict[tuple[str, str], list[PortionAssignment]] = {}
+    for p in body.portions:
+        grouped.setdefault((p.date, p.slot), []).append(p)
+
+    for (date_str, slot), portions in grouped.items():
+        existing = db.query(Meal).filter(Meal.date == date_str, Meal.slot == slot).first()
+        if existing:
+            db.delete(existing)
+            db.flush()
+
+        meal = Meal(date=date_str, slot=slot, name=recipe.name, batch_plan_id=plan.id)
+        db.add(meal)
+        db.flush()
+
+        for p in portions:
+            macros = compute_portion_macros(recipe.ingredients, nutrition_by_name, p.preset)
+            db.add(MealPortion(meal_id=meal.id, preset=p.preset, **macros))
+
+    db.commit()
+    db.refresh(plan)
+    return plan
 
 
 @router.get("/plans/{plan_id}", response_model=BatchCookingPlanOut)
