@@ -1,6 +1,8 @@
 """Utility helpers for batch cooking: preset factors and macro/quantity scaling."""
 from __future__ import annotations
 
+from datetime import date
+
 PRESET_FACTORS: dict[str, float] = {
     "reduction_agressive": -0.30,
     "reduction_moderee": -0.20,
@@ -10,6 +12,27 @@ PRESET_FACTORS: dict[str, float] = {
     "masse_moderee": 0.20,
     "masse_agressive": 0.30,
 }
+SEASONS: tuple[str, ...] = ("spring", "summer", "autumn", "winter")
+
+
+def current_season(d: date | None = None) -> str:
+    """Meteorological season (Northern hemisphere) for a given date.
+
+    Args:
+        d (date | None): Date to evaluate; defaults to today.
+
+    Returns:
+        (str): One of SEASONS.
+    """
+    d = d or date.today()
+    month = d.month
+    if month in (3, 4, 5):
+        return "spring"
+    if month in (6, 7, 8):
+        return "summer"
+    if month in (9, 10, 11):
+        return "autumn"
+    return "winter"
 
 
 def scale_quantity(base_quantity: float, preset: str, is_scalable: bool) -> float:

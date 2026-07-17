@@ -13,7 +13,12 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session as DBSession
 
-from app.batch_utils import PRESET_FACTORS, compute_portion_macros, scale_quantity
+from app.batch_utils import (
+    PRESET_FACTORS,
+    SEASONS,
+    compute_portion_macros,
+    scale_quantity,
+)
 from app.database import get_db
 from app.models.base import (
     BatchCookingPlan,
@@ -36,18 +41,36 @@ router = APIRouter(prefix="/batch-cooking", tags=["batch-cooking"])
 # ── Recipes ───────────────────────────────────────────────────
 
 @router.get("/recipes", response_model=list[BatchRecipeOut])
-def list_batch_recipes(db: DBSession = Depends(get_db)):
-    """List all available batch-cooking recipes."""
-    return db.query(BatchRecipe).all()
+def list_batch_recipes(season: str | None = None, db: DBSession = Depends(get_db)):
+    """List batch-cooking recipes, optionally filtered by season.
+
+    Recipes with season=None (year-round) are always included when a
+    season filter is applied.
+    """
+    if season and season not in SEASONS:
+        raise HTTPException(status_code=422, detail=f"Invalid season '{season}'")
+    q = db.query(BatchRecipe)
+    if season:
+        q = q.filter((BatchRecipe.season == season) | (BatchRecipe.season.is_(None)))
+    return q.all()
 
 
 @router.post("/recipes", response_model=BatchRecipeOut, status_code=201)
 def create_batch_recipe(body: BatchRecipeCreate, db: DBSession = Depends(get_db)):
     """Create a new batch-cooking recipe, ingredient quantities given per serving."""
-    recipe = BatchRecipe(name=body.name, instructions=body.instructions)
-    recipe.ingredients = [
-        BatchRecipeIngredient(**i.model_dump()) for i in body.ingredients
-    ]
+    if body.season and body.season not in SEASONS:
+        raise HTTPException(status_code=422, detail=f"Invalid season '{body.season}'")
+    if body.base_portions < 1:
+        raise HTTPException(status_code=422, detail="base_portions must be at least 1")
+
+    recipe = BatchRecipe(
+        name=body.name,
+        instructions=body.instructions,
+        base_portions=body.base_portions,
+        season=body.season,
+        recipe_link=body.recipe_link,
+    )
+    recipe.ingredients = [BatchRecipeIngredient(**i.model_dump()) for i in body.ingredients]
     db.add(recipe)
     db.commit()
     db.refresh(recipe)
@@ -58,49 +81,24 @@ def create_batch_recipe(body: BatchRecipeCreate, db: DBSession = Depends(get_db)
 
 @router.post("/plans", response_model=BatchCookingPlanOut, status_code=201)
 def create_batch_plan(body: BatchCookingPlanCreate, db: DBSession = Depends(get_db)):
-    """Create a batch-cooking plan: assign portions (each with its own preset) to
-    meal slots, compute macros per portion. Quantities are scaled per-portion,
-    so the preset changes how much of each ingredient is actually cooked.
+    """Create a batch-cooking plan. The number of portions assigned must
+    exactly match the recipe's base_portions, since that's how many
+    portions cooking it once actually yields.
     """
     recipe = db.query(BatchRecipe).filter(BatchRecipe.id == body.recipe_id).first()
     if not recipe:
         raise HTTPException(status_code=404, detail="Recipe not found")
 
+    if len(body.portions) != recipe.base_portions:
+        raise HTTPException(
+            status_code=422,
+            detail=f"This recipe yields {recipe.base_portions} portions; "
+                   f"{len(body.portions)} were assigned.",
+        )
+
     for portion in body.portions:
         if portion.preset not in PRESET_FACTORS:
             raise HTTPException(status_code=422, detail=f"Unknown preset '{portion.preset}'")
-
-    nutrition_by_name = {
-        n.name: n
-        for n in db.query(IngredientNutrition)
-        .filter(IngredientNutrition.name.in_([i.ingredient_name for i in recipe.ingredients]))
-        .all()
-    }
-
-    plan = BatchCookingPlan(recipe_id=recipe.id, created_date=body.created_date)
-    db.add(plan)
-    db.flush()  # récupérer plan.id avant de créer les Meal
-
-    grouped: dict[tuple[str, str], list] = {}
-    for portion in body.portions:
-        grouped.setdefault((portion.date, portion.slot), []).append(portion)
-
-    for (date_str, slot), portions in grouped.items():
-        existing = db.query(Meal).filter(Meal.date == date_str, Meal.slot == slot).first()
-        if existing:
-            db.delete(existing)
-            db.flush()
-
-        meal = Meal(date=date_str, slot=slot, name=recipe.name, batch_plan_id=plan.id)
-        meal.portions = [
-            MealPortion(preset=p.preset, **compute_portion_macros(recipe.ingredients, nutrition_by_name, p.preset))
-            for p in portions
-        ]
-        db.add(meal)
-
-    db.commit()
-    db.refresh(plan)
-    return plan
 
 
 @router.get("/plans/{plan_id}", response_model=BatchCookingPlanOut)
