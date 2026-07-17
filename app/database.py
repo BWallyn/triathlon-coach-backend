@@ -4,7 +4,7 @@
 
 import os
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import sessionmaker
 
 from app.config import ATHLETE_NAMES
@@ -54,13 +54,28 @@ def _sync_athlete_names(db) -> None:
     db.commit()
 
 
+def _migrate_missing_columns() -> None:
+    """Add columns to existing tables that create_all() can't retrofit."""
+    inspector = inspect(engine)
+    existing_cols = {c["name"] for c in inspector.get_columns("batch_recipes")}
+    additions = {
+        "base_portions": "INTEGER NOT NULL DEFAULT 4",
+        "season": "VARCHAR",
+        "recipe_link": "VARCHAR",
+    }
+    with engine.begin() as conn:
+        for col, ddl in additions.items():
+            if col not in existing_cols:
+                conn.execute(text(f"ALTER TABLE batch_recipes ADD COLUMN {col} {ddl}"))
+
+
 def init_db():
     """Initialize the database by creating tables and syncing athlete names."""
     Base.metadata.create_all(bind=engine)
+    _migrate_missing_columns()
     db = SessionLocal()
     try:
         _sync_athlete_names(db)
-
         from app.data.ciqual_seed import seed_ingredient_nutrition
         seed_ingredient_nutrition(db)
     finally:

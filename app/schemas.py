@@ -204,6 +204,9 @@ class BatchRecipeCreate(BaseModel):
     """Schema for creating a batch-cooking recipe."""
     name: str
     instructions: str | None = None
+    base_portions: int
+    season: str | None = None       # "spring"|"summer"|"autumn"|"winter"|None
+    recipe_link: str | None = None
     ingredients: list[BatchRecipeIngredientIn]
 
 
@@ -212,6 +215,9 @@ class BatchRecipeOut(BaseModel):
     id: int
     name: str
     instructions: str | None
+    base_portions: int
+    season: str | None
+    recipe_link: str | None
     ingredients: list[BatchRecipeIngredientOut]
 
     class Config:

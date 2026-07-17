@@ -134,6 +134,9 @@ class BatchRecipe(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String, nullable=False)
     instructions = Column(String, nullable=True)
+    base_portions = Column(Integer, nullable=False, default=4)
+    season = Column(String, nullable=True)       # "spring"|"summer"|"autumn"|"winter"|None (toutes saisons)
+    recipe_link = Column(String, nullable=True)
 
     ingredients = relationship("BatchRecipeIngredient", back_populates="recipe", cascade="all, delete-orphan")
 
