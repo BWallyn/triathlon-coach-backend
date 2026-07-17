@@ -57,11 +57,31 @@ def list_batch_recipes(season: str | None = None, db: DBSession = Depends(get_db
 
 @router.post("/recipes", response_model=BatchRecipeOut, status_code=201)
 def create_batch_recipe(body: BatchRecipeCreate, db: DBSession = Depends(get_db)):
-    """Create a new batch-cooking recipe, ingredient quantities given per serving."""
+    """Create a new batch-cooking recipe, ingredient quantities given per serving.
+
+    Ingredients not yet present in ingredient_nutrition are auto-created with
+    zeroed macros (kcal/protein/carbs/fat = 0), to be corrected later via the
+    Ciqual import / LLM matching pipeline. This avoids a ForeignKeyViolation
+    that only surfaces in prod (Postgres enforces the FK; SQLite in dev doesn't).
+    """
     if body.season and body.season not in SEASONS:
         raise HTTPException(status_code=422, detail=f"Invalid season '{body.season}'")
     if body.base_portions < 1:
         raise HTTPException(status_code=422, detail="base_portions must be at least 1")
+
+    ingredient_names = {i.ingredient_name for i in body.ingredients}
+    existing_names = {
+        name for (name,) in db.query(IngredientNutrition.name)
+        .filter(IngredientNutrition.name.in_(ingredient_names))
+        .all()
+    }
+    missing_names = ingredient_names - existing_names
+    for name in missing_names:
+        db.add(IngredientNutrition(
+            name=name, kcal_100g=0, protein_100g=0, carbs_100g=0, fat_100g=0,
+        ))
+    if missing_names:
+        db.flush()  # les IngredientNutrition doivent exister avant l'insert des FK
 
     recipe = BatchRecipe(
         name=body.name,
