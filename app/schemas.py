@@ -59,7 +59,8 @@ class RaceIn(BaseModel):
     athlete_id: str | None = None   # None = shared between B and H
     name: str
     date: str                        # YYYY-MM-DD
-    format: str                      # sprint | olympic | half_ironman | ironman | other
+    discipline: str = "triathlon"    # triathlon | running | cycling | swim
+    format: str                      # depends on discipline, see DISCIPLINE_FORMATS in routers/races.py
     priority: str = "B"              # A | B | C
     target_time: str | None = None
     location: str | None = None

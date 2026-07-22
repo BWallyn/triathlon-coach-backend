@@ -57,20 +57,29 @@ def _sync_athlete_names(db) -> None:
 def _migrate_missing_columns() -> None:
     """Add columns to existing tables that create_all() can't retrofit."""
     inspector = inspect(engine)
-    existing_cols = {c["name"] for c in inspector.get_columns("batch_recipes")}
-    additions = {
-        "base_portions": "INTEGER NOT NULL DEFAULT 4",
-        "season": "VARCHAR",
-        "recipe_link": "VARCHAR",
-        "ref_kcal": "FLOAT",
-        "ref_protein_g": "FLOAT",
-        "ref_carbs_g": "FLOAT",
-        "ref_fat_g": "FLOAT",
+    table_columns_to_add = {
+        "batch_recipes": {
+            "base_portions": "INTEGER NOT NULL DEFAULT 4",
+            "season": "VARCHAR",
+            "recipe_link": "VARCHAR",
+            "ref_kcal": "FLOAT",
+            "ref_protein_g": "FLOAT",
+            "ref_carbs_g": "FLOAT",
+            "ref_fat_g": "FLOAT",
+        },
+        "races": {
+            "discipline": "VARCHAR NOT NULL DEFAULT 'triathlon'",
+        },
     }
+    existing_tables = set(inspector.get_table_names())
     with engine.begin() as conn:
-        for col, ddl in additions.items():
-            if col not in existing_cols:
-                conn.execute(text(f"ALTER TABLE batch_recipes ADD COLUMN {col} {ddl}"))
+        for table, additions in table_columns_to_add.items():
+            if table not in existing_tables:
+                continue
+            existing_cols = {c["name"] for c in inspector.get_columns(table)}
+            for col, ddl in additions.items():
+                if col not in existing_cols:
+                    conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {ddl}"))
 
 
 def init_db():
