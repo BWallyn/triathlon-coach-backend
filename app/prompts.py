@@ -15,7 +15,12 @@ Réponds toujours en français, de façon concise et actionnelle.
 # ── Training plan ─────────────────────────────────────────────
 
 TRAINING_PLAN_SYSTEM = TRICOUPLE_PERSONA + """
-Tu génères des plans d'entraînement hebdomadaires structurés.
+Tu génères des plans d'entraînement hebdomadaires structurés, en tenant compte
+de la ou des courses cibles de chaque athlète (date, format, priorité A/B/C)
+et de leur état de forme récent (sommeil, ressenti, charge réelle des 14
+derniers jours). Adapte la charge de la semaine à la phase d'entraînement
+(base / développement / affûtage spécifique / taper / semaine de course) et
+à leur récupération réelle, pas seulement à un objectif générique.
 Réponds UNIQUEMENT avec un objet JSON valide, sans texte autour, sans balises markdown.
 Format attendu :
 {
@@ -26,8 +31,8 @@ Format attendu :
       "day": "Lundi" | "Mardi" | "Mercredi" | "Jeudi" | "Vendredi" | "Samedi" | "Dimanche",
       "sessions": [
         {
-          "athlete": "both" | "B" | "C",
-          "discipline": "swim" | "bike" | "run",
+          "athlete": "both" | "B" | "H",
+          "discipline": "swim" | "bike" | "run" | "strength",
           "kind": string,
           "duration": "30min" | "45min" | "1h" | "1h15" | "1h30" | "2h" | "2h30" | "3h+",
           "description": string
@@ -45,12 +50,18 @@ Génère un plan d'entraînement pour la semaine du {week_start} au {week_end}.
 
 Contexte :
 - Niveau : intermédiaires (quelques Olympiques et Half au compteur)
-- Formats cibles : Olympique et Half-Ironman
 - Ils s'entraînent ensemble la plupart du temps
-- Objectif de la semaine : {goal}
-- Charge souhaitée : {load_level} (légère / modérée / chargée)
+- Charge souhaitée (indicative, peut être ajustée selon les courses et la forme) : {load_level}
 - Contraintes particulières : {constraints}
 - Nombre de séances max par semaine : {max_sessions}
+
+Courses cibles :
+{race_context}
+
+Forme récente (14 derniers jours) :
+{recent_feedback}
+
+Objectif de la semaine (si précisé manuellement, sinon déduis-le des courses cibles) : {goal}
 """
 
 # ── Smart meal suggestions ────────────────────────────────────

@@ -52,6 +52,29 @@ class SessionOut(BaseModel):
         from_attributes = True
 
 
+# ── Races ─────────────────────────────────────────────────────
+
+class RaceIn(BaseModel):
+    """Schema for creating/updating a race."""
+    athlete_id: str | None = None   # None = shared between B and H
+    name: str
+    date: str                        # YYYY-MM-DD
+    format: str                      # sprint | olympic | half_ironman | ironman | other
+    priority: str = "B"              # A | B | C
+    target_time: str | None = None
+    location: str | None = None
+    goal_notes: str | None = None
+
+
+class RaceOut(RaceIn):
+    """Schema for returning a race."""
+    id: int
+
+    class Config:
+        """Enable ORM mode to allow returning SQLAlchemy models directly."""
+        from_attributes = True
+
+
 # ── Meals ─────────────────────────────────────────────────────
 
 class IngredientIn(BaseModel):
