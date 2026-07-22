@@ -19,6 +19,7 @@ from app.routers import (
     athletes,
     batch_cooking,
     meals,
+    races,
     sessions,
     wellness,
 )
@@ -65,6 +66,7 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 
 app.include_router(athletes.router)
 app.include_router(sessions.router)
+app.include_router(races.router)
 app.include_router(meals.router)
 app.include_router(ai.router)
 app.include_router(wellness.router)
