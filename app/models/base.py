@@ -46,6 +46,22 @@ class Session(Base):
     athlete = relationship("Athlete", back_populates="sessions")
 
 
+class Race(Base):
+    """SQLAlchemy model for a race (triathlon, running, cycling, or swim)."""
+    __tablename__ = "races"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    athlete_id = Column(String, ForeignKey("athletes.id"), nullable=True)  # None = shared
+    name = Column(String, nullable=False)
+    date = Column(String, nullable=False)  # YYYY-MM-DD
+    discipline = Column(String, nullable=False, default="triathlon")  # triathlon | running | cycling | swim
+    format = Column(String, nullable=False)
+    priority = Column(String, nullable=False, default="B")
+    target_time = Column(String, nullable=True)
+    location = Column(String, nullable=True)
+    goal_notes = Column(String, nullable=True)
+
+
 class Meal(Base):
     """SQLAlchemy model for a meal."""
     __tablename__ = "meals"
