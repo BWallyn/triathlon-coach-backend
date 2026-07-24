@@ -66,8 +66,9 @@ class SessionResult(Base):
     actual_distance_km = Column(Float, nullable=True)
     avg_hr = Column(Integer, nullable=True)
     max_hr = Column(Integer, nullable=True)
-    avg_power_w = Column(Float, nullable=True)     # vélo principalement
-    avg_speed_kmh = Column(Float, nullable=True)   # base du calcul d'allure
+    avg_power_w = Column(Float, nullable=True)     # vélo uniquement
+    avg_speed_kmh = Column(Float, nullable=True)   # vélo uniquement
+    avg_pace_sec = Column(Integer, nullable=True)  # secondes par km (run) ou par 100m (swim)
     elevation_gain_m = Column(Float, nullable=True)
     calories = Column(Integer, nullable=True)
     rpe = Column(Integer, nullable=True)  # ressenti d'effort, 1-10
