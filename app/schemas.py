@@ -46,6 +46,7 @@ class SessionResultIn(BaseModel):
     max_hr: int | None = None
     avg_power_w: float | None = None
     avg_speed_kmh: float | None = None
+    avg_pace_sec: int | None = None  # sec/km (run) ou sec/100m (swim)
     elevation_gain_m: float | None = None
     calories: int | None = None
     rpe: int | None = None

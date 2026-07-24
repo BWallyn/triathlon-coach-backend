@@ -8,6 +8,7 @@ from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import sessionmaker
 
 from app.config import ATHLETE_NAMES
+from app.data.ciqual_seed import seed_ingredient_nutrition
 from app.models.base import Athlete, Base
 
 # Options
@@ -70,6 +71,9 @@ def _migrate_missing_columns() -> None:
         "races": {
             "discipline": "VARCHAR NOT NULL DEFAULT 'triathlon'",
         },
+        "session_results": {
+            "avg_pace_sec": "INTEGER",
+        },
     }
     existing_tables = set(inspector.get_table_names())
     with engine.begin() as conn:
@@ -89,7 +93,6 @@ def init_db():
     db = SessionLocal()
     try:
         _sync_athlete_names(db)
-        from app.data.ciqual_seed import seed_ingredient_nutrition
         seed_ingredient_nutrition(db)
     finally:
         db.close()
