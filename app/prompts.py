@@ -21,6 +21,11 @@ et de leur état de forme récent (sommeil, ressenti, charge réelle des 14
 derniers jours). Adapte la charge de la semaine à la phase d'entraînement
 (base / développement / affûtage spécifique / taper / semaine de course) et
 à leur récupération réelle, pas seulement à un objectif générique.
+Utilise également le taux de complétion des séances (loguées vs planifiées) et
+les indicateurs d'intensité réelle (RPE, fréquence cardiaque moyenne) quand ils
+sont disponibles : réduis le volume ou l'intensité si la complétion est faible
+ou si le RPE/FC indique une fatigue accumulée, et n'hésite pas à progresser si
+tout est bien assimilé.
 Réponds UNIQUEMENT avec un objet JSON valide, sans texte autour, sans balises markdown.
 Format attendu :
 {

@@ -33,7 +33,7 @@ class Athlete(Base):
 
 
 class Session(Base):
-    """SQLAlchemy model for a training session."""
+    """SQLAlchemy model for a training session (the plan)."""
     __tablename__ = "sessions"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -44,22 +44,39 @@ class Session(Base):
     duration = Column(String, nullable=False)  # 30min | 1h | etc.
 
     athlete = relationship("Athlete", back_populates="sessions")
+    result = relationship(
+        "SessionResult", back_populates="session", uselist=False, cascade="all, delete-orphan",
+    )
 
 
-class Race(Base):
-    """SQLAlchemy model for a race (triathlon, running, cycling, or swim)."""
-    __tablename__ = "races"
+class SessionResult(Base):
+    """SQLAlchemy model for the actual (completed) metrics of a training session.
+
+    Captures what really happened during a session (duration, distance, heart
+    rate, power, pace...), as opposed to `Session` which only holds the plan.
+    Populated either manually after a session or, in a future iteration, via
+    a Strava sync (see `source` / `strava_activity_id`).
+    """
+    __tablename__ = "session_results"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    athlete_id = Column(String, ForeignKey("athletes.id"), nullable=True)  # None = shared
-    name = Column(String, nullable=False)
-    date = Column(String, nullable=False)  # YYYY-MM-DD
-    discipline = Column(String, nullable=False, default="triathlon")  # triathlon | running | cycling | swim
-    format = Column(String, nullable=False)
-    priority = Column(String, nullable=False, default="B")
-    target_time = Column(String, nullable=True)
-    location = Column(String, nullable=True)
-    goal_notes = Column(String, nullable=True)
+    session_id = Column(Integer, ForeignKey("sessions.id"), nullable=False, unique=True)
+
+    actual_duration_min = Column(Integer, nullable=True)
+    actual_distance_km = Column(Float, nullable=True)
+    avg_hr = Column(Integer, nullable=True)
+    max_hr = Column(Integer, nullable=True)
+    avg_power_w = Column(Float, nullable=True)     # vélo principalement
+    avg_speed_kmh = Column(Float, nullable=True)   # base du calcul d'allure
+    elevation_gain_m = Column(Float, nullable=True)
+    calories = Column(Integer, nullable=True)
+    rpe = Column(Integer, nullable=True)  # ressenti d'effort, 1-10
+    notes = Column(String, nullable=True)
+
+    source = Column(String, nullable=False, default="manual")  # manual | strava
+    strava_activity_id = Column(String, nullable=True, unique=True)
+
+    session = relationship("Session", back_populates="result")
 
 
 class Meal(Base):
@@ -153,8 +170,6 @@ class BatchRecipe(Base):
     base_portions = Column(Integer, nullable=False, default=4)
     season = Column(String, nullable=True)
     recipe_link = Column(String, nullable=True)
-    # Macros de référence par portion (informatif, saisi manuellement,
-    # ne remplace pas le calcul auto via ingrédients + Ciqual)
     ref_kcal = Column(Float, nullable=True)
     ref_protein_g = Column(Float, nullable=True)
     ref_carbs_g = Column(Float, nullable=True)
@@ -171,9 +186,9 @@ class BatchRecipeIngredient(Base):
     recipe_id = Column(Integer, ForeignKey("batch_recipes.id"), nullable=False)
     ingredient_name = Column(String, ForeignKey("ingredient_nutrition.name"), nullable=False)
     quantity_per_serving = Column(Float, nullable=False)
-    unit = Column(String, nullable=False)  # "g" | "ml" | "unité" | "gousse" | "c.à.s" ...
-    is_scalable = Column(Boolean, nullable=False, default=True)  # False = épices/aromates fixes
-    unit_weight_g = Column(Float, nullable=True)  # grammes/unité, requis pour macros si unit != g/ml
+    unit = Column(String, nullable=False)
+    is_scalable = Column(Boolean, nullable=False, default=True)
+    unit_weight_g = Column(Float, nullable=True)
 
     recipe = relationship("BatchRecipe", back_populates="ingredients")
 
@@ -203,3 +218,18 @@ class MealPortion(Base):
     fat_g = Column(Float, nullable=False)
 
     meal = relationship("Meal", back_populates="portions")
+
+
+class Race(Base):
+    """SQLAlchemy model for a target race."""
+    __tablename__ = "races"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    athlete_id = Column(String, ForeignKey("athletes.id"), nullable=True)  # None = shared
+    name = Column(String, nullable=False)
+    date = Column(String, nullable=False)
+    format = Column(String, nullable=False)
+    priority = Column(String, nullable=False, default="B")
+    target_time = Column(String, nullable=True)
+    location = Column(String, nullable=True)
+    goal_notes = Column(String, nullable=True)

@@ -32,24 +32,60 @@ class AthleteUpdate(BaseModel):
 class SessionCreate(BaseModel):
     """Schema for creating a new training session."""
     athlete_id: str
-    date: str        # YYYY-MM-DD
-    discipline: str  # swim | bike | run
+    date: str
+    discipline: str
     kind: str
-    duration: str    # 30min | 45min | 1h | …
+    duration: str
+
+
+class SessionResultIn(BaseModel):
+    """Schema for creating/updating the actual metrics of a session."""
+    actual_duration_min: int | None = None
+    actual_distance_km: float | None = None
+    avg_hr: int | None = None
+    max_hr: int | None = None
+    avg_power_w: float | None = None
+    avg_speed_kmh: float | None = None
+    elevation_gain_m: float | None = None
+    calories: int | None = None
+    rpe: int | None = None
+    notes: str | None = None
+    source: str = "manual"
+    strava_activity_id: str | None = None
+
+
+class SessionResultOut(SessionResultIn):
+    """Schema for returning a session result."""
+    id: int
+    session_id: int
+
+    class Config:
+        """Enable ORM mode to allow returning SQLAlchemy models directly."""
+        from_attributes = True
 
 
 class SessionOut(BaseModel):
-    """Schema for returning training session data."""
+    """Schema for returning training session data, including its logged result if any."""
     id: int
     athlete_id: str
     date: str
     discipline: str
     kind: str
     duration: str
+    result: SessionResultOut | None = None
 
     class Config:
         """Enable ORM mode to allow returning SQLAlchemy models directly."""
         from_attributes = True
+
+
+class SessionResultWithSessionOut(SessionResultOut):
+    """Schema for a session result enriched with its parent session's planning info."""
+    date: str
+    athlete_id: str
+    discipline: str
+    kind: str
+    planned_duration: str
 
 
 # ── Races ─────────────────────────────────────────────────────
