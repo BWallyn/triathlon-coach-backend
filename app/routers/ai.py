@@ -20,7 +20,15 @@ from sqlalchemy.orm import Session as DBSession
 
 from app.database import get_db
 from app.llm import LLMClient, get_llm_client
-from app.models.base import Athlete, FeelingLog, Ingredient, Meal, Race, SleepLog
+from app.models.base import (
+    Athlete,
+    FeelingLog,
+    Ingredient,
+    Meal,
+    Race,
+    SessionResult,
+    SleepLog,
+)
 from app.models.base import Session as TrainingSession
 from app.prompts import (
     MEAL_SUGGESTION_SYSTEM,
@@ -98,7 +106,7 @@ def _compute_charge_label(sessions: list[TrainingSession]) -> str:
         sum(DUR_WEIGHT.get(s.duration, 1) for s in sessions if s.athlete_id == a)
         for a in ("B", "H")
     )
-    if max_h >= 2:
+    if max_h >= 2:  # noqa: PLR2004
         return "high"
     if max_h >= 1:
         return "med"
@@ -109,13 +117,13 @@ def _compute_charge_label(sessions: list[TrainingSession]) -> str:
 
 def _training_phase(weeks_to_race: float) -> str:
     """Map a weeks-to-race distance to a coaching phase label."""
-    if weeks_to_race < 0.5:
+    if weeks_to_race < 0.5:  # noqa: PLR2004
         return "semaine de course"
-    if weeks_to_race < 2:
+    if weeks_to_race < 2:  # noqa: PLR2004
         return "affûtage (taper)"
-    if weeks_to_race < 6:
+    if weeks_to_race < 6:  # noqa: PLR2004
         return "développement spécifique"
-    if weeks_to_race < 12:
+    if weeks_to_race < 12:  # noqa: PLR2004
         return "développement"
     return "base"
 
@@ -154,7 +162,10 @@ def _race_context(db: DBSession, week_start: str) -> str:
 
 
 def _recent_feedback_summary(db: DBSession, week_start: str, lookback_days: int = 14) -> str:
-    """Summarize each athlete's actual training load and wellness over the past N days."""
+    """Summarize each athlete's actual training load, execution, and wellness
+    over the past N days: planned vs completed (logged) sessions, plus RPE and
+    heart rate averages when they've been logged.
+    """
     end = date.fromisoformat(week_start) - timedelta(days=1)
     start = end - timedelta(days=lookback_days - 1)
     start_str, end_str = start.isoformat(), end.isoformat()
@@ -173,6 +184,21 @@ def _recent_feedback_summary(db: DBSession, week_start: str, lookback_days: int 
             .all()
         )
         total_hours = sum(DUR_WEIGHT.get(s.duration, 1.0) for s in sessions)
+
+        session_ids = [s.id for s in sessions]
+        results = (
+            db.query(SessionResult).filter(SessionResult.session_id.in_(session_ids)).all()
+            if session_ids else []
+        )
+        completed = len(results)
+        planned = len(sessions)
+        compliance = (
+            f"{completed}/{planned} séances loguées avec résultat"
+            if planned else "aucune séance planifiée"
+        )
+
+        rpes = [r.rpe for r in results if r.rpe is not None]
+        hrs = [r.avg_hr for r in results if r.avg_hr is not None]
 
         feelings = (
             db.query(FeelingLog)
@@ -193,7 +219,11 @@ def _recent_feedback_summary(db: DBSession, week_start: str, lookback_days: int 
             .all()
         )
 
-        parts = [f"{total_hours:.1f}h sur {lookback_days}j"]
+        parts = [f"{total_hours:.1f}h planifiées sur {lookback_days}j", compliance]
+        if rpes:
+            parts.append(f"RPE moyen des séances loguées {sum(rpes) / len(rpes):.1f}/10")
+        if hrs:
+            parts.append(f"FC moyenne des séances loguées {sum(hrs) / len(hrs):.0f} bpm")
         if feelings:
             avg_fatigue = sum(f.fatigue for f in feelings) / len(feelings)
             avg_motivation = sum(f.motivation for f in feelings) / len(feelings)
@@ -216,6 +246,7 @@ def _recent_feedback_summary(db: DBSession, week_start: str, lookback_days: int 
 # Schemas
 
 class TrainingPlanRequest(BaseModel):
+    """Request schema for generating a weekly training plan."""
     week_start: str                        # YYYY-MM-DD (Monday)
     week_end: str                          # YYYY-MM-DD (Sunday)
     goal: str | None = None                # optional manual override; else inferred from races
@@ -225,6 +256,7 @@ class TrainingPlanRequest(BaseModel):
 
 
 class SmartMealRequest(BaseModel):
+    """Request schema for generating meal suggestions based on training load."""
     week_start: str
     week_end: str
     persist: bool = True  # if True, saves generated meals to DB
@@ -258,9 +290,9 @@ async def generate_training_plan(
     try:
         plan = await llm.complete_json(TRAINING_PLAN_SYSTEM, user_prompt)
     except ValueError as e:
-        raise HTTPException(status_code=502, detail=f"LLM returned invalid JSON: {e}")
+        raise HTTPException(status_code=502, detail=f"LLM returned invalid JSON: {e}") from e
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"LLM error: {e}")
+        raise HTTPException(status_code=502, detail=f"LLM error: {e}") from e
 
     return plan
 
@@ -286,9 +318,9 @@ async def smart_generate_meals(
     try:
         result = await llm.complete_json(MEAL_SUGGESTION_SYSTEM, user_prompt)
     except ValueError as e:
-        raise HTTPException(status_code=502, detail=f"LLM returned invalid JSON: {e}")
+        raise HTTPException(status_code=502, detail=f"LLM returned invalid JSON: {e}") from e
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"LLM error: {e}")
+        raise HTTPException(status_code=502, detail=f"LLM error: {e}") from e
 
     if body.persist:
         for day in result.get("days", []):
@@ -332,8 +364,8 @@ async def weekly_analysis(
     try:
         analysis = await llm.complete_json(WEEKLY_ANALYSIS_SYSTEM, user_prompt)
     except ValueError as e:
-        raise HTTPException(status_code=502, detail=f"LLM returned invalid JSON: {e}")
+        raise HTTPException(status_code=502, detail=f"LLM returned invalid JSON: {e}") from e
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"LLM error: {e}")
+        raise HTTPException(status_code=502, detail=f"LLM error: {e}") from e
 
     return analysis
