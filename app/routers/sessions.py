@@ -86,6 +86,7 @@ def list_session_results(
             max_hr=r.max_hr,
             avg_power_w=r.avg_power_w,
             avg_speed_kmh=r.avg_speed_kmh,
+            avg_pace_sec=r.avg_pace_sec,
             elevation_gain_m=r.elevation_gain_m,
             calories=r.calories,
             rpe=r.rpe,
