@@ -24,6 +24,17 @@ def list_sessions(
     athlete_id: str | None = None,
     db: DBSession = Depends(get_db),
 ):
+    """List training sessions, optionally filtered by week range and/or athlete.
+
+    Args:
+        week_start (str | None): Optional start date to filter sessions.
+        week_end (str | None): Optional end date to filter sessions.
+        athlete_id (str | None): Optional athlete ID to filter sessions.
+        db (DBSession): Active SQLAlchemy session.
+
+    Returns:
+        list[SessionOut]: List of training sessions.
+    """
     q = db.query(TrainingSession)
     if athlete_id:
         q = q.filter(TrainingSession.athlete_id == athlete_id)
@@ -35,7 +46,16 @@ def list_sessions(
 
 
 @router.post("/", response_model=SessionOut, status_code=201)
-def create_session(body: SessionCreate, db: DBSession = Depends(get_db)):
+def create_session(body: SessionCreate, db: DBSession = Depends(get_db)) -> SessionOut:
+    """Create session for an athlete. The session is the plan, not the actual metrics (which are logged later).
+
+    Args:
+        body (SessionCreate): Session creation data.
+        db (DBSession): Active SQLAlchemy session.
+
+    Returns:
+        SessionOut: Created session data.
+    """
     if body.discipline not in VALID_DISCIPLINES:
         raise HTTPException(status_code=422, detail="Invalid discipline")
     session = TrainingSession(**body.model_dump())
@@ -46,7 +66,16 @@ def create_session(body: SessionCreate, db: DBSession = Depends(get_db)):
 
 
 @router.delete("/{session_id}", status_code=204)
-def delete_session(session_id: int, db: DBSession = Depends(get_db)):
+def delete_session(session_id: int, db: DBSession = Depends(get_db)) -> None:
+    """Delete a training session.
+
+    Args:
+        session_id (int): ID of the session to delete.
+        db (DBSession): Active SQLAlchemy session.
+
+    Returns:
+        None
+    """
     session = db.query(TrainingSession).filter(TrainingSession.id == session_id).first()
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -63,8 +92,19 @@ def list_session_results(
     date_end: str | None = None,
     discipline: str | None = None,
     db: DBSession = Depends(get_db),
-):
-    """List logged session results, joined with their planned session, for the Performance page."""
+) -> list[SessionResultWithSessionOut]:
+    """List logged session results, joined with their planned session, for the Performance page.
+
+    Args:
+        athlete_id (str | None): Optional athlete ID to filter results.
+        date_start (str | None): Optional start date to filter results.
+        date_end (str | None): Optional end date to filter results.
+        discipline (str | None): Optional discipline to filter results.
+        db (DBSession): Active SQLAlchemy session.
+
+    Returns:
+        list[SessionResultWithSessionOut]: List of logged session results with their planned session data.
+    """
     q = db.query(SessionResult).join(TrainingSession, SessionResult.session_id == TrainingSession.id)
     if athlete_id:
         q = q.filter(TrainingSession.athlete_id == athlete_id)
@@ -104,8 +144,17 @@ def list_session_results(
 
 
 @router.post("/{session_id}/result", response_model=SessionResultOut, status_code=201)
-def upsert_session_result(session_id: int, body: SessionResultIn, db: DBSession = Depends(get_db)):
-    """Create or update (upsert) the logged result for a session."""
+def upsert_session_result(session_id: int, body: SessionResultIn, db: DBSession = Depends(get_db)) -> SessionResultOut:
+    """Create or update (upsert) the logged result for a session.
+
+    Args:
+        session_id (int): ID of the session to log results for.
+        body (SessionResultIn): Logged result data.
+        db (DBSession): Active SQLAlchemy session.
+
+    Returns:
+        SessionResultOut: Created or updated logged result data.
+    """
     session = db.query(TrainingSession).filter(TrainingSession.id == session_id).first()
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -126,7 +175,16 @@ def upsert_session_result(session_id: int, body: SessionResultIn, db: DBSession 
 
 
 @router.get("/{session_id}/result", response_model=SessionResultOut)
-def get_session_result(session_id: int, db: DBSession = Depends(get_db)):
+def get_session_result(session_id: int, db: DBSession = Depends(get_db)) -> SessionResultOut:
+    """Get the results logged for a session.
+
+    Args:
+        session_id (int): ID of the session to retrieve results for.
+        db (DBSession): Active SQLAlchemy session.
+
+    Returns:
+        SessionResultOut: Logged results for the session.
+    """
     result = db.query(SessionResult).filter(SessionResult.session_id == session_id).first()
     if not result:
         raise HTTPException(status_code=404, detail="No result logged for this session")
@@ -134,7 +192,16 @@ def get_session_result(session_id: int, db: DBSession = Depends(get_db)):
 
 
 @router.delete("/{session_id}/result", status_code=204)
-def delete_session_result(session_id: int, db: DBSession = Depends(get_db)):
+def delete_session_result(session_id: int, db: DBSession = Depends(get_db)) -> None:
+    """Delete the results logged for a session.
+
+    Args:
+        session_id (int): ID of the session to delete results for.
+        db (DBSession): Active SQLAlchemy session.
+
+    Returns:
+        None
+    """
     result = db.query(SessionResult).filter(SessionResult.session_id == session_id).first()
     if not result:
         raise HTTPException(status_code=404, detail="No result logged for this session")
