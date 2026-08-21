@@ -1,6 +1,6 @@
 # Triathlon Coach — Backend
 
-FastAPI + SQLAlchemy API powering Triathlon Cost, a triathlon training and nutrition
+FastAPI + SQLAlchemy API powering Triathlon Coach, a triathlon training and nutrition
 companion app for two athletes (`B` and `H`) who train together, targeting
 Olympic and Half-Ironman race formats.
 
